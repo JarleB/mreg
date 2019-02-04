@@ -1,12 +1,15 @@
 import ipaddress
 
-from django.db.models.signals import pre_save, post_save, post_delete
+from django.db.models.signals import pre_save, post_save, post_delete, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
 
 from mreg.models import (Cname, Host, Ipaddress, ModelChangeLog, Naptr,
-                         PtrOverride, Srv, Txt, ReverseZone, ForwardZoneMember)
+                         PtrOverride, Srv, Txt, ReverseZone, ForwardZoneMember, NameServer, ForwardZoneDelegation,ReverseZoneDelegation, ReverseZone, ForwardZone)
 from mreg.api.v1.serializers import HostSerializer
+from rest_framework.exceptions import PermissionDenied
+
+
 
 
 def _del_ptr(ipaddress):
@@ -163,3 +166,33 @@ def save_host_history_on_delete(sender, instance, **kwargs):
                                    action='deleted',
                                    timestamp=timezone.now())
     new_log_entry.save()
+
+
+@receiver(pre_delete, sender=Host)
+def prevent_nameserver_hostdeletion(sender, instance, using, **kwargs):
+    nameserver = NameServer.objects.filter(name=instance.name)
+    if nameserver.exists():
+        for zone in (ForwardZone,
+                     ReverseZone,
+                     ForwardZoneDelegation,
+                     ReverseZoneDelegation):
+            zone = zone.objects.get(pk=instance.zone_id)
+            for nameserver in zone.nameservers.iterator():
+                if instance.name == str(nameserver):
+                    raise PermissionDenied(detail='This host is a nameserver and cannot be deleted untill it has been removed from its designated zone')
+    else:
+        return
+
+
+@receiver(pre_delete, sender=Ipaddress)
+def prevent_nameserver_IPdeletion(sender, instance, using, **kwargs):
+    nameserver = NameServer.objects.filter(name=instance.host.name)
+    if nameserver.exists():
+        for zone in (ForwardZone, ReverseZone, ForwardZoneDelegation,
+                          ReverseZoneDelegation):
+            zone = zone.objects.get(pk=instance.host.zone_id)
+            for nameserver in zone.nameservers.iterator():
+                if instance.host.name == str(nameserver):
+                    raise PermissionDenied(detail='This ipaddress belongs to a nameserver and cannot be deleted before the nameserver has been removed from its designated zone')
+    else:
+        return
