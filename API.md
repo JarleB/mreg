@@ -39,3 +39,5 @@ Foreslår at vi gjør det på denne måten:
 Noen operasjoner skal i noen tilfeller avvises og gi en advarsel. Det kan være avhengig av hvilke data som finnes i systemet fra før av, eller om det er en "alvorlig" operasjon.
 
 I de tilfellene kan man oppgi en egen parameter ("force") for å overstyre dette og gjennomføre operasjonen. Isåfall bør advarselen likevel komme, men som en infomelding.
+
+
