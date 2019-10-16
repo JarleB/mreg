@@ -215,4 +215,3 @@ Du skal nå kunne gå til en browser og videre til http://localhost:8000/ressurs
 for å bl.a se på hva API'et har av info, der 'ressurs' er f.eks 'hosts' eller 'subnets'.
 
 
-Dummy
